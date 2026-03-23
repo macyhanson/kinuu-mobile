@@ -150,6 +150,26 @@ export default function ExercisePlayerScreen() {
         <Text style={styles.footerNote}>
           {exercise.neuroplasticityNote ?? exercise.description}
         </Text>
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.devBtn}
+            onPress={() =>
+              handleExerciseComplete({
+                exerciseId: exercise.id,
+                sessionId: activeSessionId,
+                level,
+                attemptCount: 5,
+                successCount: 4,
+                accuracyPercent: 80,
+                performanceZone: 'green',
+                completedAt: new Date().toISOString(),
+                side,
+              })
+            }
+          >
+            <Text style={styles.devBtnText}>[DEV] Simulate Complete</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Regulation Check Overlay */}
@@ -217,6 +237,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  devBtn: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+  },
+  devBtnText: {
+    color: Colors.primaryLight,
+    fontSize: Typography.size.sm,
+    fontFamily: 'monospace',
   },
   error: {
     flex: 1,
