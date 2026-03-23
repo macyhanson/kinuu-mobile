@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "BrainyAct",
+    "slug": "brainyact",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "brainyact",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#33a1dc"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kinuu.brainyact",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BrainyAct uses your camera for motion tracking during exercises.",
+        "NSMicrophoneUsageDescription": "BrainyAct uses your microphone for audio exercises."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#33a1dc"
+      },
+      "package": "com.kinuu.brainyact",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      ["expo-router", { "root": "src/app" }],
+      "expo-camera",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
