@@ -1,44 +1,57 @@
 /**
- * Session Warm-Up Screen
+ * Cool-Down Screen (Phase 3)
  *
- * Guides caregiver through the 5-min warm-up phase before exercises.
- * Adapts instructions based on child's sensory profile.
- * Per protocol: this phase is NOT optional — it primes RAS for motor learning.
+ * Slow, rhythmic, calming activities to consolidate motor learning via
+ * parasympathetic shift (per session protocol). On completion:
+ *   1. Persists the completed session to AsyncStorage
+ *   2. Increments child's currentSessionNumber
+ *   3. Routes to home
+ *
+ * NOT optional — parasympathetic shift enhances hippocampal + cerebellar memory consolidation.
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useChildStore } from '@/stores/childStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
-import { SESSION_PHASES, COMMUNICATION_PROFILES } from '@/constants/sessionProtocol';
+import { SESSION_PHASES } from '@/constants/sessionProtocol';
 
-const WARM_UP_ACTIVITIES = [
+const COOL_DOWN_ACTIVITIES = [
   {
-    id: 'deep_pressure',
-    name: 'Deep Pressure / Joint Compressions',
-    icon: '🤲',
-    duration: '3 min',
-    instruction:
-      'Apply gentle, firm pressure to major joints: shoulders, elbows, wrists, hips, knees, ankles. 2 seconds per joint, 5-10 reps each. Count slowly aloud.',
-  },
-  {
-    id: 'animal_walk',
-    name: 'Animal Walk',
-    icon: '🐻',
+    id: 'slow_breathing',
+    name: 'Slow Breathing',
+    icon: '🌬️',
     duration: '2 min',
     instruction:
-      'Model a bear walk (hands and feet, hips up) across the room. No demand to copy — just model and let curiosity drive participation.',
+      'Model slow, deep belly breaths. Breathe in for 4 counts, hold for 2, breathe out for 6. No demand — just model and breathe together.',
+  },
+  {
+    id: 'slow_rocking',
+    name: 'Slow Rocking / Swaying',
+    icon: '🌊',
+    duration: '2 min',
+    instruction:
+      'Gentle side-to-side rocking or swaying. Can be in caregiver\'s lap, a rocking chair, or standing. Rhythm should feel like slow waves.',
+  },
+  {
+    id: 'heavy_work_finish',
+    name: 'Heavy Work Finish',
+    icon: '🤲',
+    duration: '1 min',
+    instruction:
+      'Light joint compressions (shoulders, arms) or a brief wall push. Grounds the nervous system before transition.',
   },
 ];
 
-export default function WarmUpScreen() {
+export default function CoolDownScreen() {
   const router = useRouter();
-  const { activeChild } = useChildStore();
-  const { currentSession, advancePhase } = useSessionStore();
+  const { activeChild, updateChild } = useChildStore();
+  const { currentSession, completeSession } = useSessionStore();
   const [completedActivities, setCompletedActivities] = useState<string[]>([]);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const toggle = (id: string) => {
     setCompletedActivities((prev) =>
@@ -46,50 +59,42 @@ export default function WarmUpScreen() {
     );
   };
 
-  const handleContinue = () => {
-    advancePhase();
-    router.replace('/(session)/core-exercises');
+  const handleCompleteSession = async () => {
+    if (!activeChild || !currentSession) return;
+    setIsCompleting(true);
+    try {
+      await completeSession();
+      await updateChild(activeChild.id, {
+        currentSessionNumber: activeChild.currentSessionNumber + 1,
+      });
+      router.replace('/(main)/home');
+    } catch {
+      setIsCompleting(false);
+      Alert.alert('Error', 'Failed to save session. Please try again.');
+    }
   };
-
-  const communicationProfile = activeChild
-    ? activeChild.sensoryProfile.demandAvoidant
-      ? COMMUNICATION_PROFILES.demandAvoidant
-      : activeChild.sensoryProfile.auditoryAvoidant
-      ? COMMUNICATION_PROFILES.sensitiveSensory
-      : activeChild.isVerbal
-      ? COMMUNICATION_PROFILES.verbal
-      : COMMUNICATION_PROFILES.minimalVerbal
-    : COMMUNICATION_PROFILES.verbal;
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace('/(main)/home')}>
           <Text style={styles.backText}>✕ End Session</Text>
         </TouchableOpacity>
         <View style={styles.phaseTag}>
-          <Text style={styles.phaseTagText}>🌅 Warm-Up · 5 min</Text>
+          <Text style={styles.phaseTagText}>🌙 Cool-Down · 5 min</Text>
         </View>
       </View>
 
-      {/* Why warm-up matters */}
+      {/* Why cool-down matters */}
       <Card style={styles.purposeCard}>
         <Text style={styles.purposeTitle}>Why This Matters</Text>
-        <Text style={styles.purposeText}>{SESSION_PHASES.warm_up.neuroplasticityNote}</Text>
+        <Text style={styles.purposeText}>{SESSION_PHASES.cool_down.neuroplasticityNote}</Text>
       </Card>
 
-      {/* Communication guidance */}
-      {activeChild && (
-        <Card style={styles.commCard}>
-          <Text style={styles.commLabel}>Communication Approach</Text>
-          <Text style={styles.commProfile}>{communicationProfile.label}</Text>
-          <Text style={styles.commText}>{communicationProfile.guidance}</Text>
-        </Card>
-      )}
-
       {/* Activities */}
-      <Text style={styles.sectionTitle}>Warm-Up Activities</Text>
-      {WARM_UP_ACTIVITIES.map((activity) => {
+      <Text style={styles.sectionTitle}>Cool-Down Activities</Text>
+      {COOL_DOWN_ACTIVITIES.map((activity) => {
         const done = completedActivities.includes(activity.id);
         return (
           <TouchableOpacity
@@ -116,20 +121,31 @@ export default function WarmUpScreen() {
         );
       })}
 
-      {/* Safety reminder */}
-      <Card style={styles.safetyCard}>
-        <Text style={styles.safetyTitle}>⚠️ Regulation Check</Text>
-        <Text style={styles.safetyText}>
-          If the child shows any signs of dysregulation — crying, freezing, fleeing — stop and stay in warm-up. Never move to core activities while dysregulated.
-        </Text>
-      </Card>
+      {/* Session summary */}
+      {currentSession && (
+        <Card style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Session Summary</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Exercises completed</Text>
+            <Text style={styles.summaryValue}>{currentSession.exerciseResults.length}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Regulation events</Text>
+            <Text style={styles.summaryValue}>{currentSession.regulationEvents.length}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Session</Text>
+            <Text style={styles.summaryValue}>#{currentSession.sessionNumber}</Text>
+          </View>
+        </Card>
+      )}
 
       <Button
-        label="Begin Core Exercises →"
-        onPress={handleContinue}
+        label={isCompleting ? 'Saving…' : 'Complete Session ✓'}
+        onPress={handleCompleteSession}
         fullWidth
         size="lg"
-        style={styles.continueBtn}
+        style={styles.completeBtn}
       />
     </ScrollView>
   );
@@ -146,19 +162,15 @@ const styles = StyleSheet.create({
   },
   backText: { color: Colors.error, fontSize: Typography.size.base },
   phaseTag: {
-    backgroundColor: Colors.primaryPale,
+    backgroundColor: '#e8eaf6',
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
   },
-  phaseTagText: { color: Colors.primary, fontWeight: '600', fontSize: Typography.size.sm },
+  phaseTagText: { color: '#3949ab', fontWeight: '600', fontSize: Typography.size.sm },
   purposeCard: { backgroundColor: Colors.primaryPale, borderColor: Colors.primaryLight },
   purposeTitle: { fontWeight: '700', color: Colors.dark, fontSize: Typography.size.base, marginBottom: 4 },
   purposeText: { color: Colors.dark, fontSize: Typography.size.sm, lineHeight: 20 },
-  commCard: { borderColor: Colors.border },
-  commLabel: { fontSize: Typography.size.xs, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 },
-  commProfile: { fontSize: Typography.size.base, fontWeight: '700', color: Colors.textPrimary, marginTop: 2 },
-  commText: { fontSize: Typography.size.sm, color: Colors.textSecondary, marginTop: 4, lineHeight: 20 },
   sectionTitle: { fontSize: Typography.size.lg, fontWeight: '700', color: Colors.textPrimary },
   activityCard: { gap: Spacing.sm },
   activityDone: { opacity: 0.7, borderColor: Colors.green },
@@ -179,8 +191,14 @@ const styles = StyleSheet.create({
   checkboxDone: { borderColor: Colors.green, backgroundColor: Colors.green },
   checkmark: { color: Colors.white, fontWeight: '700', fontSize: 14 },
   activityInstruction: { color: Colors.textSecondary, fontSize: Typography.size.sm, lineHeight: 20, paddingLeft: 44 },
-  safetyCard: { backgroundColor: '#fff8e1', borderColor: '#ffe082' },
-  safetyTitle: { fontWeight: '700', fontSize: Typography.size.base, color: '#f57c00', marginBottom: 4 },
-  safetyText: { fontSize: Typography.size.sm, color: '#795548', lineHeight: 20 },
-  continueBtn: {},
+  summaryCard: { gap: Spacing.sm, backgroundColor: Colors.offWhite },
+  summaryTitle: { fontWeight: '700', color: Colors.textPrimary, fontSize: Typography.size.base },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: { fontSize: Typography.size.sm, color: Colors.textMuted },
+  summaryValue: { fontSize: Typography.size.base, fontWeight: '700', color: Colors.textPrimary },
+  completeBtn: {},
 });
