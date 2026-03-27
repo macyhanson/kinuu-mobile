@@ -14,6 +14,7 @@ import { UnityExerciseView } from '@/components/unity/UnityExerciseView';
 import { RegulationCheck } from '@/components/session/RegulationCheck';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useAssessmentStore } from '@/stores/assessmentStore';
 import { useChildStore } from '@/stores/childStore';
 import { getExerciseById } from '@/constants/exercises';
 import { Colors, Typography, Spacing } from '@/constants/theme';
@@ -25,6 +26,12 @@ export default function ExercisePlayerScreen() {
   const { activeChild } = useChildStore();
   const { currentSession, recordExerciseResult, flagDysregulation, returnToWarmUp, advancePhase } =
     useSessionStore();
+  const { currentAssessment, recordResult: recordAssessmentResult } = useAssessmentStore();
+
+  // Resolved values that work in both session and assessment modes
+  const activeSessionId = currentSession?.id ?? currentAssessment?.id ?? '';
+  const activeSessionPhase = currentSession?.phase ?? 'core';
+  const activeSessionNumber = currentSession?.sessionNumber ?? activeChild?.currentSessionNumber ?? 1;
 
   const [showRegulationCheck, setShowRegulationCheck] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -33,7 +40,7 @@ export default function ExercisePlayerScreen() {
   const exercise = getExerciseById(params.exerciseId ?? '');
   const level = parseInt(params.level ?? '1', 10);
 
-  if (!exercise || !activeChild || !currentSession) {
+  if (!exercise || !activeChild || (!currentSession && !currentAssessment)) {
     return (
       <View style={styles.error}>
         <Text style={styles.errorText}>Session state lost. Please return to home.</Text>
@@ -46,11 +53,11 @@ export default function ExercisePlayerScreen() {
 
   const side =
     activeChild.hemisphereWeakness === 'left'
-      ? currentSession.sessionNumber <= 16
+      ? activeSessionNumber <= 16
         ? 'left'
         : 'right'
       : activeChild.hemisphereWeakness === 'right'
-      ? currentSession.sessionNumber <= 16
+      ? activeSessionNumber <= 16
         ? 'right'
         : 'left'
       : 'bilateral';
@@ -58,43 +65,47 @@ export default function ExercisePlayerScreen() {
   const handleExerciseComplete = useCallback(
     (result: ExerciseResult) => {
       recordExerciseResult(result);
+      // Also record in assessment store when an assessment is active
+      if (currentAssessment) {
+        recordAssessmentResult(result);
+      }
       router.back();
     },
-    [recordExerciseResult, router]
+    [recordExerciseResult, recordAssessmentResult, currentAssessment, router]
   );
 
   const handleRegulationEvent = useCallback(() => {
     flagDysregulation({
       timestamp: new Date().toISOString(),
-      phase: currentSession.phase,
+      phase: activeSessionPhase,
       exerciseId: exercise.id,
       action: 'dysregulation_detected',
     });
     setShowRegulationCheck(true);
-  }, [flagDysregulation, currentSession, exercise]);
+  }, [flagDysregulation, activeSessionPhase, exercise]);
 
   const handleReturnToWarmUp = useCallback(() => {
     setShowRegulationCheck(false);
     flagDysregulation({
       timestamp: new Date().toISOString(),
-      phase: currentSession.phase,
+      phase: activeSessionPhase,
       exerciseId: exercise.id,
       action: 'returned_to_warmup',
     });
     returnToWarmUp();
     router.replace('/(session)/warm-up');
-  }, [flagDysregulation, returnToWarmUp, router, currentSession, exercise]);
+  }, [flagDysregulation, returnToWarmUp, router, activeSessionPhase, exercise]);
 
   const handleEndSession = useCallback(() => {
     setShowRegulationCheck(false);
     flagDysregulation({
       timestamp: new Date().toISOString(),
-      phase: currentSession.phase,
+      phase: activeSessionPhase,
       exerciseId: exercise.id,
       action: 'session_ended_early',
     });
     router.replace('/(main)/home');
-  }, [flagDysregulation, router, currentSession, exercise]);
+  }, [flagDysregulation, router, activeSessionPhase, exercise]);
 
   const handleKeypointsUpdate = useCallback((sample: MotionDataSample) => {
     motionSamples.current.push(sample);
@@ -124,7 +135,7 @@ export default function ExercisePlayerScreen() {
             level,
             side,
             childId: activeChild.id,
-            sessionId: currentSession.id,
+            sessionId: activeSessionId,
             exerciseId: exercise.id,
           }}
           onExerciseComplete={handleExerciseComplete}
@@ -139,6 +150,26 @@ export default function ExercisePlayerScreen() {
         <Text style={styles.footerNote}>
           {exercise.neuroplasticityNote ?? exercise.description}
         </Text>
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.devBtn}
+            onPress={() =>
+              handleExerciseComplete({
+                exerciseId: exercise.id,
+                sessionId: activeSessionId,
+                level,
+                attemptCount: 5,
+                successCount: 4,
+                accuracyPercent: 80,
+                performanceZone: 'green',
+                completedAt: new Date().toISOString(),
+                side,
+              })
+            }
+          >
+            <Text style={styles.devBtnText}>[DEV] Simulate Complete</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Regulation Check Overlay */}
@@ -206,6 +237,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  devBtn: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+  },
+  devBtnText: {
+    color: Colors.primaryLight,
+    fontSize: Typography.size.sm,
+    fontFamily: 'monospace',
   },
   error: {
     flex: 1,

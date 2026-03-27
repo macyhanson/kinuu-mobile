@@ -105,6 +105,21 @@ export default function LoginScreen() {
               <Text style={styles.signupLink}>Create account</Text>
             </TouchableOpacity>
           </View>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              style={styles.devBtn}
+              onPress={async () => {
+                await setUser(
+                  { id: 'dev-user-1', email: 'dev@brainyact.com', name: 'Dev User', role: 'caregiver', createdAt: new Date().toISOString() },
+                  'dev-token-123'
+                );
+                router.replace('/(main)/home');
+              }}
+            >
+              <Text style={styles.devBtnText}>[DEV] Skip Login</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -201,5 +216,17 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: Typography.size.base,
     fontWeight: '600',
+  },
+  devBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    marginTop: Spacing.xs,
+  },
+  devBtnText: {
+    color: Colors.textMuted,
+    fontSize: Typography.size.sm,
+    fontFamily: 'monospace',
   },
 });

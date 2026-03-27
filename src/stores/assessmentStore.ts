@@ -8,7 +8,7 @@ interface AssessmentState {
 
   startAssessment: (assessment: Assessment) => void;
   recordResult: (result: ExerciseResult) => void;
-  completeAssessment: (hemisphereResult: HemisphereResult) => Promise<Assessment>;
+  completeAssessment: (hemisphereResult?: HemisphereResult) => Promise<Assessment>;
   loadHistory: (childId: string) => Promise<void>;
   getPreAssessment: (childId: string) => Assessment | undefined;
   getPostAssessment: (childId: string) => Assessment | undefined;
@@ -32,6 +32,7 @@ function deriveHemisphereWeakness(results: ExerciseResult[]): HemisphereResult {
       determinedBy.push(result.exerciseId);
     } else if (result.side === 'right') {
       rightScores.push(result.accuracyPercent);
+      determinedBy.push(result.exerciseId);
     }
   }
 
@@ -69,7 +70,7 @@ export const useAssessmentStore = create<AssessmentState>((set, get) => ({
     });
   },
 
-  completeAssessment: async (providedResult) => {
+  completeAssessment: async (providedResult?: HemisphereResult) => {
     const current = get().currentAssessment;
     if (!current) throw new Error('No active assessment');
 

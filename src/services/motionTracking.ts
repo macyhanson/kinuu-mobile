@@ -61,17 +61,18 @@ class MotionTrackingService {
     }
   }
 
+  private detector: unknown = null;
+
   private async initTensorFlow(): Promise<void> {
-    // Lazy import to avoid loading TF if using LightBuzz
     const tf = await import('@tensorflow/tfjs');
     await import('@tensorflow/tfjs-react-native');
     await tf.ready();
 
-    // MoveNet Thunder (more accurate) or Lightning (faster)
-    // const detector = await poseDetection.createDetector(
-    //   poseDetection.SupportedModels.MoveNet,
-    //   { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER }
-    // );
+    const poseDetection = await import('@tensorflow-models/pose-detection');
+    this.detector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER }
+    );
     console.log('[MotionTracking] TensorFlow MoveNet initialized');
   }
 
@@ -122,29 +123,40 @@ class MotionTrackingService {
   /**
    * Detect which side (left/right) shows movement deficit.
    * Used during Fukuda, balance, and asymmetric exercises.
+   *
+   * Method: compares range of motion (x-axis excursion) of homologous limb
+   * keypoints (wrist, elbow, knee, ankle). The side with significantly less
+   * excursion has lower motor output and is considered the weaker side.
+   *
+   * Requires at least 30 samples for a reliable reading.
    */
   detectWeakSide(samples: MotionDataSample[]): 'left' | 'right' | 'undetermined' {
-    if (samples.length < 10) return 'undetermined';
+    if (samples.length < 30) return 'undetermined';
 
-    const leftScores: number[] = [];
-    const rightScores: number[] = [];
+    const LIMB_PAIRS: Array<[keyof typeof samples[0]['keypoints'][0], keyof typeof samples[0]['keypoints'][0]]> = [];
+    const LEFT_LANDMARKS = ['left_wrist', 'left_elbow', 'left_knee', 'left_ankle'] as const;
+    const RIGHT_LANDMARKS = ['right_wrist', 'right_elbow', 'right_knee', 'right_ankle'] as const;
 
-    for (const sample of samples) {
-      const leftShoulder = sample.keypoints.find((k) => k.name === 'left_shoulder');
-      const rightShoulder = sample.keypoints.find((k) => k.name === 'right_shoulder');
-      if (leftShoulder) leftScores.push(leftShoulder.score);
-      if (rightShoulder) rightScores.push(rightShoulder.score);
-    }
+    /** Compute range of x-positions for a named keypoint across all samples */
+    const rangeOfMotion = (landmarkName: string): number => {
+      const xs = samples
+        .map((s) => s.keypoints.find((k) => k.name === landmarkName))
+        .filter((k): k is NonNullable<typeof k> => k !== undefined && k.score > 0.4)
+        .map((k) => k.x);
+      if (xs.length < 5) return 0;
+      return Math.max(...xs) - Math.min(...xs);
+    };
 
-    const avg = (arr: number[]) =>
-      arr.reduce((a, b) => a + b, 0) / Math.max(arr.length, 1);
+    const leftROM = LEFT_LANDMARKS.reduce((sum, name) => sum + rangeOfMotion(name), 0);
+    const rightROM = RIGHT_LANDMARKS.reduce((sum, name) => sum + rangeOfMotion(name), 0);
 
-    const leftAvg = avg(leftScores);
-    const rightAvg = avg(rightScores);
+    // Require at least 10% asymmetry to call a side weak
+    const total = leftROM + rightROM;
+    if (total === 0) return 'undetermined';
+    const asymmetry = Math.abs(leftROM - rightROM) / total;
+    if (asymmetry < 0.1) return 'undetermined';
 
-    if (leftAvg < rightAvg - 0.1) return 'left';
-    if (rightAvg < leftAvg - 0.1) return 'right';
-    return 'undetermined';
+    return leftROM < rightROM ? 'left' : 'right';
   }
 }
 

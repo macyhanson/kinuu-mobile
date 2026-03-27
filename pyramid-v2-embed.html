@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrainyAct® Pyramid — Guided Climb</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;0,9..40,800&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #F0F7FA; font-family: 'DM Sans', system-ui, sans-serif; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.5/babel.min.js"></script>
+<script type="text/babel">
+const { useState } = React;
+
+const LAYERS = [
+  { id: 0, title: "Central Nervous System", isBase: true, skills: [], color: "#1A5E7A", bg: "linear-gradient(135deg, #1A5E7A, #13518C)", desc: "The foundation upon which all development is built. The CNS processes and integrates all sensory and motor information." },
+  { id: 1, title: "Senses", skills: ["Balance/Motion (Vestibular)", "Body Position (Proprioception)", "Light", "Sound", "Touch", "Taste", "Smell"], color: "#1B7A8A", bg: "linear-gradient(135deg, #1B7A8A, #1A6B7E)", desc: "The raw sensory inputs that feed the central nervous system — the first building block of all higher function." },
+  { id: 2, title: "Sensory Motor", skills: ["Rhythm & Timing", "Directionality", "Laterality", "Gross Motor Movement", "Spatial Awareness"], color: "#1B9AAA", bg: "linear-gradient(135deg, #1B9AAA, #1A8A9A)", desc: "Integrating sensory input with motor output. Without this layer, the brain cannot coordinate purposeful movement." },
+  { id: 3, title: "Perceptual Motor", skills: ["Eye-Hand-Foot Coordination", "Auditory Perception", "Visual Perception", "Fine Motor", "Visual Tracking"], color: "#5BC0BE", bg: "linear-gradient(135deg, #5BC0BE, #3AAFAD)", desc: "Refining motor output with perceptual feedback. This layer bridges raw movement with purposeful, skilled actions." },
+  { id: 4, title: "Cognitive Perceptual", skills: ["Response Time", "Reasoning", "Auditory Memory", "Visual Memory"], color: "#8DD4D0", bg: "linear-gradient(135deg, #8DD4D0, #6DC8C4)", desc: "Higher-order processing that connects perception to thinking — memory, reasoning, and processing speed." },
+  { id: 5, title: "Life Skills", skills: ["Academics", "Behaviors", "Social Skills", "Sports", "Music"], color: "#B8E8E0", bg: "linear-gradient(135deg, #B8E8E0, #A0DFD6)", desc: "The pinnacle — real-world abilities that depend on every layer below being strong." },
+];
+
+const BL = [{ text: "Lower Brain", range: [0, 2] }, { text: "Upper Brain", range: [3, 5] }];
+
+function App() {
+  const [cur, setCur] = useState(0);
+  const rev = [...LAYERS].reverse();
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F0F7FA" }}>
+      <div style={{ textAlign: "center", padding: "40px 24px 0", animation: "fadeUp 0.5s ease both" }}>
+        <div style={{ display: "inline-block", fontSize: 10, textTransform: "uppercase", letterSpacing: 3, color: "#1B9AAA", fontWeight: 700, padding: "5px 16px", borderRadius: 24, background: "rgba(27,154,170,0.08)", border: "1px solid rgba(27,154,170,0.15)", fontFamily: "'Outfit'" }}>BrainyAct® Pyramid of Development</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#0B2545", margin: "14px 0 0", lineHeight: 1.25, letterSpacing: -0.5, fontFamily: "'Outfit'" }}>How Each Layer Builds Upon the Last</h1>
+        <p style={{ fontSize: 14, color: "#6B7C93", maxWidth: 480, margin: "10px auto 0", lineHeight: 1.6 }}>Development follows a bottom-up sequence. Each layer depends on the strength of the layers below it.</p>
+      </div>
+      <div style={{ maxWidth: 560, margin: "32px auto 0", padding: "0 20px 48px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 28 }}>
+          <button onClick={() => setCur(Math.max(0, cur - 1))} disabled={cur === 0} style={{ border: "none", color: "#FFF", padding: "8px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: cur === 0 ? "not-allowed" : "pointer", fontFamily: "'Outfit'", background: cur === 0 ? "#CBD5E1" : "#13518C" }}>← Down</button>
+          <div style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: 13, color: LAYERS[cur].color, minWidth: 100, textAlign: "center" }}>Level {cur + 1} of {LAYERS.length}</div>
+          <button onClick={() => setCur(Math.min(LAYERS.length - 1, cur + 1))} disabled={cur === LAYERS.length - 1} style={{ border: "none", color: "#FFF", padding: "8px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: cur === LAYERS.length - 1 ? "not-allowed" : "pointer", fontFamily: "'Outfit'", background: cur === LAYERS.length - 1 ? "#CBD5E1" : "#1B9AAA" }}>Up →</button>
+        </div>
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", left: -8, top: 0, bottom: 0, display: "flex", flexDirection: "column", justifyContent: "center", zIndex: 5 }}>
+            {BL.map((bl, bi) => <div key={bi} style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontFamily: "'Outfit'", fontWeight: 700, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: cur >= bl.range[0] && cur <= bl.range[1] ? "#1B9AAA" : "#CBD5E1", transition: "color 0.4s", padding: "12px 0" }}>{bl.text}</div>)}
+          </div>
+          {rev.map((layer, ri) => {
+            const i = LAYERS.length - 1 - ri; const isCur = i === cur; const isBelow = i < cur; const isAbove = i > cur;
+            const w = layer.isBase ? 100 : 55 + (LAYERS.length - 1 - i) * 9;
+            return (
+              <div key={layer.id} onClick={() => setCur(i)} style={{ width: w + "%", margin: "0 auto", marginBottom: layer.isBase ? 0 : 6, opacity: isCur ? 1 : isBelow ? 0.7 : 0.2, transform: isCur ? "scale(1.04)" : "scale(1)", filter: isAbove ? "grayscale(0.8) blur(0.5px)" : "none", transition: "all 0.5s cubic-bezier(0.34,1.56,0.64,1)", cursor: "pointer", position: "relative", zIndex: isCur ? 10 : 1 }}>
+                <div style={{ background: layer.bg, borderRadius: layer.isBase ? "0 0 12px 12px" : 12, padding: isCur ? "20px 22px" : "14px 20px", boxShadow: isCur ? "0 12px 36px " + layer.color + "35" : "none", border: isCur ? "2px solid rgba(255,255,255,0.3)" : "2px solid transparent", transition: "all 0.4s ease" }}>
+                  <div style={{ fontFamily: "'Outfit'", fontWeight: 800, fontSize: isCur ? 17 : (layer.isBase ? 13 : 14), color: "#FFF", textTransform: "uppercase", letterSpacing: layer.isBase ? 2 : 1, textShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "font-size 0.3s" }}>{layer.title}</div>
+                  {isCur && !layer.isBase && <div style={{ animation: "fadeUp 0.4s ease both", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.2)" }}>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, fontStyle: "italic", marginBottom: 8 }}>{layer.desc}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{layer.skills.map((s, si) => <span key={si} style={{ background: "rgba(255,255,255,0.2)", padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 500, color: "#FFF", animation: "fadeUp 0.3s ease both " + si * 0.05 + "s" }}>{s}</span>)}</div>
+                  </div>}
+                  {isCur && layer.isBase && <div style={{ animation: "fadeUp 0.4s ease both", marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>{layer.desc}</div>}
+                </div>
+                {isAbove && !layer.isBase && <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.4 }}>🔒</div>}
+                {isBelow && <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, opacity: 0.6 }}>✓</div>}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "#6B7C93", lineHeight: 1.6 }}>
+          {cur > 0 ? <span><strong style={{ color: LAYERS[cur].color }}>{LAYERS[cur].title}</strong> requires <strong style={{ color: LAYERS[cur - 1].color }}>{LAYERS[cur - 1].title}</strong>{cur > 1 && <span> → which requires {LAYERS.slice(0, cur - 1).reverse().map(l => l.title).join(" → ")}</span>}</span>
+          : <span><strong style={{ color: LAYERS[0].color }}>{LAYERS[0].title}</strong> — the foundation of everything above</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

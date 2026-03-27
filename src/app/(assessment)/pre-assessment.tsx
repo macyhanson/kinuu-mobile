@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useChildStore } from '@/stores/childStore';
 import { useAssessmentStore } from '@/stores/assessmentStore';
+import { useSessionStore } from '@/stores/sessionStore';
 import { ASSESSMENT_EXERCISES } from '@/constants/exercises';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import type { Assessment } from '@/types';
@@ -24,6 +25,7 @@ export default function PreAssessmentScreen() {
   const router = useRouter();
   const { activeChild, updateChild } = useChildStore();
   const { startAssessment, currentAssessment, completeAssessment } = useAssessmentStore();
+  const { startSession } = useSessionStore();
 
   const [currentIdx, setCurrentIdx] = useState(-1); // -1 = intro
   const [isComplete, setIsComplete] = useState(false);
@@ -35,8 +37,9 @@ export default function PreAssessmentScreen() {
 
   const handleStart = () => {
     if (!activeChild) return;
+    const assessmentId = nanoid();
     startAssessment({
-      id: nanoid(),
+      id: assessmentId,
       childId: activeChild.id,
       type: activeChild.currentSessionNumber === 1 ? 'pre' : 'post',
       sessionNumber: activeChild.currentSessionNumber,
@@ -44,6 +47,18 @@ export default function PreAssessmentScreen() {
       exerciseResults: [],
       hemisphereResult: { leftScore: 0, rightScore: 0, weakness: 'undetermined', determinedBy: [] },
       overallScore: 0,
+    });
+    // Start a synthetic session so exercise-player can find currentSession
+    startSession({
+      id: assessmentId,
+      childId: activeChild.id,
+      sessionNumber: activeChild.currentSessionNumber,
+      type: 'assessment',
+      date: new Date().toISOString(),
+      durationMinutes: 21,
+      phase: 'core',
+      exerciseResults: [],
+      regulationEvents: [],
     });
     setCurrentIdx(0);
   };
@@ -67,7 +82,8 @@ export default function PreAssessmentScreen() {
   const handleCompleteAssessment = async () => {
     if (!activeChild || !currentAssessment) return;
     try {
-      const result = await completeAssessment(currentAssessment.hemisphereResult);
+      // Pass no argument — store derives hemisphere weakness from recorded exercise results
+      const result = await completeAssessment();
       await updateChild(activeChild.id, {
         hemisphereWeakness: result.hemisphereResult.weakness,
         currentSessionNumber: activeChild.currentSessionNumber + 1,

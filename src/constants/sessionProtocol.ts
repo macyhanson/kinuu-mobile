@@ -77,6 +77,51 @@ export const COMMUNICATION_PROFILES = {
   },
 } as const;
 
+// ─── Exercise Selection ────────────────────────────────────────────────────────
+
+/**
+ * Month-appropriate exercise pools for play sessions.
+ * Returns IDs — resolve with getExerciseById from constants/exercises.
+ *
+ * Month 1 (sessions 2-9):   Foundational vestibular + gross motor
+ * Month 2 (sessions 10-17): Bilateral integration + cross-midline
+ * Month 3 (sessions 18-25): Motor planning, sequencing, rhythm
+ * Month 4 (sessions 26-31): Cognitive-motor full suite
+ */
+const SESSION_EXERCISE_POOLS: Record<1 | 2 | 3 | 4, { warmUpIds: string[]; coreIds: string[] }> = {
+  1: {
+    warmUpIds: ['obstacle_challenge'],
+    coreIds: ['hopscotch', 'moving_sidewalk', 'cross_crawl_play', 'figure_eights_play'],
+  },
+  2: {
+    warmUpIds: ['obstacle_challenge'],
+    coreIds: ['figure_eights_play', 'cross_crawl_play', 'dance_auditory', 'dance_sequence'],
+  },
+  3: {
+    warmUpIds: ['obstacle_challenge'],
+    coreIds: ['dance_sequence', 'cross_crawl_play', 'camera_game', 'drawing'],
+  },
+  4: {
+    warmUpIds: ['obstacle_challenge'],
+    coreIds: ['dance_sequence', 'digit_span_play', 'timed_sorting', 'dichotic_listening'],
+  },
+};
+
+/**
+ * Returns warm-up and core exercise IDs for a given play session number (2-31).
+ * Session 1 = pre-assessment, session 32 = post-assessment — not handled here.
+ */
+export function getSessionExerciseIds(sessionNumber: number): { warmUpIds: string[]; coreIds: string[] } {
+  // Map overall session number to play session index (session 2 = play session 1)
+  const playSession = Math.max(1, sessionNumber - 1);
+  let month: 1 | 2 | 3 | 4;
+  if (playSession <= 8) month = 1;
+  else if (playSession <= 16) month = 2;
+  else if (playSession <= 24) month = 3;
+  else month = 4;
+  return SESSION_EXERCISE_POOLS[month];
+}
+
 /** Month-by-month neurological targets */
 export const MONTHLY_TARGETS = [
   {
